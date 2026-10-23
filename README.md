@@ -8,7 +8,7 @@ La miniatura flotante de las capturas del Mac, en Windows 10/11.
 
 Haz una captura como siempre (**Win+Shift+S** o **Impr Pant**) y aparece una miniatura abajo a la derecha:
 
-- **Arrastrarla** a una carpeta, un chat (Discord, WhatsApp, Slack…), un correo o el navegador suelta el archivo PNG.
+- **Arrastrarla** a una carpeta, un chat (Discord, WhatsApp, Slack…), un correo o el navegador suelta el archivo PNG. Como en el Mac, la miniatura viaja pegada al cursor, y los programas que no aceptan archivos reciben la imagen.
 - **Clic** la abre en Paint para editarla.
 - **Deslizarla a la derecha** la quita.
 - **Clic derecho**: Abrir, Mostrar en la carpeta, Copiar, Eliminar.

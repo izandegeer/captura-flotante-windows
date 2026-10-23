@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Windows.Forms;
 
@@ -42,6 +43,7 @@ namespace CapturaFlotante
         private Gesto gesto;
         private Point cursorInicial;
         private Point posicionInicial;
+        private Point puntoAgarre;
         private bool cerrando;
 
         public Miniatura(Bitmap captura, string rutaCaptura, int segundosVisible, Action<string> alCopiar)
@@ -124,9 +126,26 @@ namespace CapturaFlotante
             vida.Start();
         }
 
-        protected override void OnPaint(PaintEventArgs e)
+        protected override void OnPaint(PaintEventArgs e) => DibujarImagen(e.Graphics);
+
+        /// <summary>La miniatura entera con esquinas transparentes, para llevarla pegada al cursor.</summary>
+        private Bitmap DibujarParaArrastre()
         {
-            Graphics g = e.Graphics;
+            var imagen = new Bitmap(ClientSize.Width, ClientSize.Height, PixelFormat.Format32bppPArgb);
+            using (Graphics g = Graphics.FromImage(imagen))
+            {
+                g.Clear(Color.Transparent);
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using (GraphicsPath contorno = Redondeado(new Rectangle(0, 0, ClientSize.Width - 1, ClientSize.Height - 1), radioEsquinas))
+                using (var fondo = new SolidBrush(BackColor))
+                    g.FillPath(fondo, contorno);
+                DibujarImagen(g);
+            }
+            return imagen;
+        }
+
+        private void DibujarImagen(Graphics g)
+        {
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
@@ -151,6 +170,7 @@ namespace CapturaFlotante
             gesto = Gesto.Ninguno;
             cursorInicial = Cursor.Position;
             posicionInicial = Location;
+            puntoAgarre = e.Location;
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
@@ -214,13 +234,17 @@ namespace CapturaFlotante
             botonPulsado = false;
             vida.Stop();
 
-            var datos = new DataObject();
-            datos.SetData(DataFormats.FileDrop, new[] { rutaCaptura });
-            Opacity = 0.6;
-            DragDropEffects resultado = DoDragDrop(datos, DragDropEffects.Copy | DragDropEffects.Move);
+            // Como en el Mac, la miniatura "se despega" y viaja con el cursor.
+            Opacity = 0;
+            bool soltada;
+            using (Bitmap imagenArrastre = DibujarParaArrastre())
+            {
+                if (!ArrastreDelSistema.Arrastrar(Handle, rutaCaptura, imagenArrastre, puntoAgarre, out soltada))
+                    soltada = ArrastrarConWinForms();
+            }
             gesto = Gesto.Ninguno;
 
-            if (resultado != DragDropEffects.None)
+            if (soltada)
             {
                 Descartar();
             }
@@ -230,6 +254,15 @@ namespace CapturaFlotante
                 milisegundosRestantes = milisegundosVisible;
                 vida.Start();
             }
+        }
+
+        /// <summary>Plan B si el arrastre del sistema no se puede montar: solo el archivo, sin imagen en el cursor.</summary>
+        private bool ArrastrarConWinForms()
+        {
+            Opacity = 0.6;
+            var datos = new DataObject();
+            datos.SetData(DataFormats.FileDrop, new[] { rutaCaptura });
+            return DoDragDrop(datos, DragDropEffects.Copy | DragDropEffects.Move) != DragDropEffects.None;
         }
 
         // ---------- Acciones ----------

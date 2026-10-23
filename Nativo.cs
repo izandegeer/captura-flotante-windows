@@ -35,6 +35,9 @@ namespace CapturaFlotante
         [DllImport("user32.dll")]
         public static extern bool DestroyIcon(IntPtr icono);
 
+        [DllImport("gdi32.dll")]
+        public static extern bool DeleteObject(IntPtr objeto);
+
         [DllImport("dwmapi.dll")]
         public static extern int DwmSetWindowAttribute(IntPtr ventana, int atributo, ref int valor, int tamano);
 
