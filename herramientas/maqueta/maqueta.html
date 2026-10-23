@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", system-ui, sans-serif; background: #111; }
+
+  /* ---------- Escritorio ---------- */
+  .escritorio {
+    position: relative; width: 1280px; height: 800px; overflow: hidden;
+    background:
+      radial-gradient(ellipse 70% 60% at 62% 58%, #6db3ff 0%, #2a6fdc 35%, transparent 70%),
+      radial-gradient(ellipse 60% 70% at 30% 70%, #1b4fb8 0%, transparent 70%),
+      linear-gradient(160deg, #0a1f4d 0%, #0d3b8f 55%, #0a2a66 100%);
+  }
+  .ventana {
+    position: absolute; left: 150px; top: 70px; width: 820px; height: 560px;
+    background: #fff; border-radius: 8px; overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,.45), 0 0 0 1px rgba(0,0,0,.2);
+  }
+  .barra-ventana { height: 40px; background: #f3f3f3; display: flex; align-items: center; padding: 0 12px; gap: 10px; border-bottom: 1px solid #e2e2e2; }
+  .pestana { background: #fff; border-radius: 6px 6px 0 0; padding: 7px 14px; font-size: 12px; color: #222; margin-top: 8px; }
+  .controles { margin-left: auto; display: flex; gap: 26px; font-size: 14px; color: #333; }
+  .direccion { height: 34px; display: flex; align-items: center; padding: 0 12px; border-bottom: 1px solid #ececec; }
+  .direccion span { background: #f1f3f4; border-radius: 16px; padding: 5px 14px; font-size: 12px; color: #555; width: 100%; }
+
+  /* Página de ejemplo (lo que se ha capturado) */
+  .pagina { padding: 26px 32px; background: #f7f8fa; height: calc(100% - 74px); }
+  .pagina h1 { font-size: 24px; color: #101828; margin-bottom: 4px; }
+  .pagina p { font-size: 13px; color: #667085; margin-bottom: 18px; }
+  .tarjetas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
+  .tarjeta { background: #fff; border-radius: 10px; padding: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.08); }
+  .tarjeta small { font-size: 11px; color: #667085; }
+  .tarjeta b { display: block; font-size: 22px; color: #101828; margin-top: 4px; }
+  .tarjeta em { font-style: normal; font-size: 11px; color: #12b76a; }
+  .grafico { background: #fff; border-radius: 10px; height: 250px; padding: 16px; display: flex; align-items: flex-end; gap: 10px; box-shadow: 0 1px 2px rgba(16,24,40,.08); }
+  .grafico i { flex: 1; background: linear-gradient(#5b8def, #2f6bea); border-radius: 4px 4px 0 0; }
+
+  /* ---------- Barra de tareas ---------- */
+  .barra-tareas {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 48px;
+    background: rgba(32,32,40,.82); backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,.08);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .app { width: 38px; height: 38px; border-radius: 6px; display: grid; place-items: center; }
+  .app div { width: 22px; height: 22px; border-radius: 5px; }
+  .bandeja { position: absolute; right: 12px; top: 0; bottom: 0; display: flex; align-items: center; gap: 12px; color: #fff; font-size: 12px; }
+  .bandeja .hora { text-align: right; line-height: 1.3; }
+  .icono-app { width: 18px; height: 18px; }
+
+  /* ---------- Miniatura (mismas medidas que Miniatura.cs) ---------- */
+  .miniatura {
+    position: absolute; padding: 3px; background: #ececec; border-radius: 8px;
+    box-shadow: 2px 3px 6px rgba(0,0,0,.35);
+  }
+  .miniatura .imagen {
+    width: 240px; height: 150px; border-radius: 5px; overflow: hidden; position: relative;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.16);
+  }
+  .miniatura .imagen .reducida { transform: scale(.3125); transform-origin: 0 0; width: 768px; height: 480px; pointer-events: none; }
+  .miniatura .imagen .reducida .pagina { height: 100%; }
+  .en-escritorio { right: 16px; bottom: 64px; }
+
+  /* ---------- Menús (renderizador por defecto de ContextMenuStrip) ---------- */
+  .menu {
+    position: absolute; background: #f2f2f2; border: 1px solid #979797; padding: 2px;
+    font-size: 12px; color: #000; min-width: 200px; box-shadow: 2px 2px 3px rgba(0,0,0,.3);
+  }
+  .menu .opcion { position: relative; height: 22px; display: flex; align-items: center; padding-left: 32px; padding-right: 24px; }
+  .menu::before { content: ""; position: absolute; left: 2px; top: 2px; bottom: 2px; width: 24px; background: #fafafa; border-right: 1px solid #e3e3e3; }
+  .menu .opcion.activa { background: #c9e0f7; outline: 1px solid #3399ff; outline-offset: -1px; }
+  .menu .opcion.negrita { font-weight: 700; }
+  .menu .opcion.marcada::before { content: "✓"; position: absolute; left: 7px; font-size: 13px; }
+  .menu .opcion.sub::after { content: "▸"; position: absolute; right: 8px; font-size: 10px; }
+  .menu .separador { height: 1px; background: #d7d7d7; margin: 3px 2px 3px 30px; }
+
+  .encuadre { position: relative; overflow: hidden; }
+</style>
+</head>
+<body>
+<template id="pagina">
+  <div class="pagina">
+    <h1>Resumen semanal</h1>
+    <p>Visitas, registros y conversión de los últimos 7 días</p>
+    <div class="tarjetas">
+      <div class="tarjeta"><small>Visitas</small><b>48.210</b><em>+12,4 %</em></div>
+      <div class="tarjeta"><small>Registros</small><b>1.932</b><em>+8,1 %</em></div>
+      <div class="tarjeta"><small>Conversión</small><b>4,0 %</b><em>+0,3 pts</em></div>
+    </div>
+    <div class="grafico">
+      <i style="height:45%"></i><i style="height:62%"></i><i style="height:51%"></i><i style="height:78%"></i>
+      <i style="height:66%"></i><i style="height:88%"></i><i style="height:95%"></i>
+    </div>
+  </div>
+</template>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="icono" viewBox="0 0 64 64">
+    <rect width="64" height="64" rx="14" fill="#2678ff"/>
+    <g stroke="#fff" stroke-width="5" fill="none">
+      <path d="M14 27V14h13M37 14h13v13M50 37v13H37M27 50H14V37"/>
+    </g>
+    <circle cx="32" cy="32" r="7" fill="#fff"/>
+  </symbol>
+</svg>
+
+<!-- Escena 1: escritorio con la miniatura recién aparecida -->
+<div class="escritorio" id="escritorio">
+  <div class="ventana">
+    <div class="barra-ventana"><div class="pestana">Panel de métricas</div><div class="controles"><span>—</span><span>☐</span><span>✕</span></div></div>
+    <div class="direccion"><span>app.ejemplo.com/metricas</span></div>
+    <div class="hueco-pagina"></div>
+  </div>
+  <div class="miniatura en-escritorio"><div class="imagen"><div class="reducida"></div></div></div>
+  <div class="barra-tareas">
+    <div class="app"><div style="background:linear-gradient(135deg,#4cc2ff,#0067c0)"></div></div>
+    <div class="app"><div style="background:#ffd34e"></div></div>
+    <div class="app"><div style="background:linear-gradient(135deg,#37d07a,#0b8a4a)"></div></div>
+    <div class="app"><div style="background:#5865f2"></div></div>
+    <div class="app"><div style="background:#e74c3c"></div></div>
+    <div class="bandeja">
+      <svg class="icono-app"><use href="#icono"/></svg>
+      <span>📶 🔊</span>
+      <div class="hora">17:30<br>23/10/2026</div>
+    </div>
+  </div>
+</div>
+
+<!-- Escena 2: clic derecho sobre la miniatura -->
+<div class="encuadre" id="menu-miniatura" style="width:560px;height:300px;background:linear-gradient(160deg,#0d3b8f,#2a6fdc)">
+  <div class="miniatura" style="right:24px;bottom:24px"><div class="imagen"><div class="reducida"></div></div></div>
+  <div class="menu" style="left:96px;top:58px">
+    <div class="opcion negrita activa">Editar en Paint</div>
+    <div class="opcion">Abrir</div>
+    <div class="opcion">Mostrar en la carpeta</div>
+    <div class="opcion">Copiar</div>
+    <div class="separador"></div>
+    <div class="opcion">Eliminar</div>
+    <div class="opcion">Cerrar</div>
+  </div>
+</div>
+
+<!-- Escena 3: menú del icono de la bandeja -->
+<div class="encuadre" id="menu-bandeja" style="width:560px;height:290px;background:linear-gradient(160deg,#0d3b8f,#2a6fdc)">
+  <div class="menu" style="right:170px;top:24px;min-width:270px">
+    <div class="opcion negrita">Abrir carpeta de capturas</div>
+    <div class="opcion">Cambiar carpeta…</div>
+    <div class="opcion sub activa">Tiempo en pantalla</div>
+    <div class="opcion">Mostrar también imágenes copiadas</div>
+    <div class="opcion marcada">Iniciar con Windows</div>
+    <div class="separador"></div>
+    <div class="opcion">Salir</div>
+  </div>
+  <div class="menu" style="right:38px;top:69px;min-width:130px">
+    <div class="opcion">3 segundos</div>
+    <div class="opcion marcada">5 segundos</div>
+    <div class="opcion">8 segundos</div>
+    <div class="opcion">15 segundos</div>
+  </div>
+  <div class="barra-tareas" style="justify-content:flex-end">
+    <div class="bandeja" style="position:static;padding-right:12px">
+      <svg class="icono-app"><use href="#icono"/></svg>
+      <span>📶 🔊</span>
+      <div class="hora">17:30<br>23/10/2026</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const plantilla = document.getElementById('pagina');
+  document.querySelector('.hueco-pagina').replaceWith(plantilla.content.cloneNode(true));
+  document.querySelectorAll('.reducida').forEach(r => r.appendChild(plantilla.content.cloneNode(true)));
+</script>
+</body>
+</html>
